@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Runs a bundled scenario inside the VS Code extension host.
+ * Relays console events and the terminal result through run-workspace files.
+ */
 import fs from "node:fs/promises";
 import { inspect } from "node:util";
 import { pathToFileURL } from "node:url";
@@ -14,6 +18,7 @@ async function writeResult(file: string, result: { ok: boolean; error?: string }
   await fs.rename(temporary, file);
 }
 
+/** Activates the bridge and runs the scenario configured by the launcher. */
 export async function activate(): Promise<void> {
   const scenario = process.env.VSCODE_DEBUG_HARNESS_SCENARIO;
   const resultFile = process.env.VSCODE_DEBUG_HARNESS_RESULT;
@@ -39,4 +44,5 @@ export async function activate(): Promise<void> {
   }
 }
 
+/** Provides the VS Code extension deactivation hook. */
 export function deactivate(): void {}

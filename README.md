@@ -1,91 +1,162 @@
 # vscode-debug-harness
 
-Drive a real VS Code with your extension loaded, from the terminal, using a TypeScript scenario.
+`vscode-debug-harness` runs a TypeScript debugging scenario against a real VS Code instance with your extension loaded.
 
-A **scenario** is a TypeScript program describing one debugging run.
+It is intended for cases where calling extension functions directly is not enough and you need to reproduce real VS Code or webview behavior.
 
-The harness:
+A scenario can:
 
-1. creates a fresh workspace;
-2. launches a fresh VS Code with the extension under development loaded;
-3. runs the scenario inside the VS Code extension host;
-4. lets the scenario act through real VS Code and webview input;
-5. keeps the run workspace for inspection;
-6. tears VS Code down when the scenario finishes.
+* open a file in your custom editor;
+* run VS Code commands;
+* click, double-click, drag, and type in the webview;
+* inspect rendered elements;
+* read the underlying document;
+* take screenshots.
 
-The scenario acts as a user acts. It opens files, runs commands, clicks, drags, and types.
+The harness acts through normal user-facing surfaces. It does not call private APIs of the extension under test.
 
-The scenario can observe document text, page state, files, and screenshots.
+Architecture details: `docs/architecture.md`.
 
-The public API does not call extension internals that a user cannot reach.
+## How it fits together
 
-Architecture: `docs/architecture.md`.
+There are three public APIs: the Run API, the Interaction API, and the Target Interface API.
+
+```text
+Terminal
+│
+│ CLI API
+│ npx vscode-debug-harness scenario.ts
+▼
+Harness launcher
+│
+│ launches dedicated VS Code
+▼
+VS Code
+├─ Extension Host
+│   runs scenario.ts:
+│
+│   click(classBox("Order"))
+│   drag(resizeHandle(...))
+│   ...
+|        ▲
+│        |
+│        | Playwright over CDP
+│        |
+│        ▼
+└─ Renderer / client
+    └─ Webview
+       runs extension frontend
+       and receives Playwright-driven input
+```
+
+The harness knows how to perform generic actions, e.g. click, drag.
+
+Your extension-specific target library defines which UI elements the harness can address.
+
+For example:
+
+```ts
+await click(classBox("Order"));
+```
+
+`click()` comes from `vscode-debug-harness`.
+
+`classBox("Order")` comes from the extension-specific target library.
 
 ## Install
 
+### Install the package
+
 ```bash
 npm install --save-dev vscode-debug-harness
-export VSCODE_EXECUTABLE_PATH="/path/to/portable-vscode"
-npx vscode-debug-harness ./scenario.ts
 ```
 
-## VS Code runtime
+### Configure VS Code
 
-`vscode-debug-harness` requires a dedicated portable or unpacked VS Code installation. `VSCODE_EXECUTABLE_PATH` must point to its desktop executable. The harness does not use or discover your normal VS Code installation.
+The harness requires a dedicated portable or unpacked VS Code installation.
 
-Using a dedicated copy provides a fixed VS Code version without interference from normal auto-updates or user state. Each run additionally uses isolated `--user-data-dir` and `--extensions-dir` locations.
+Set `VSCODE_EXECUTABLE_PATH` to its desktop executable:
 
-### WSL on Windows
+```bash
+export VSCODE_EXECUTABLE_PATH="/path/to/portable-vscode"
+```
 
-When the harness runs in WSL, point `VSCODE_EXECUTABLE_PATH` to a Windows portable `Code.exe` through `/mnt/c/...`:
+The harness does not discover or use your normal VS Code installation.
+
+Using a dedicated copy keeps the VS Code version fixed and avoids interference from normal VS Code updates and user state.
+
+If the harness runs in WSL and VS Code runs on Windows, point `VSCODE_EXECUTABLE_PATH` to the Windows executable through `/mnt/c/...`:
 
 ```bash
 export VSCODE_EXECUTABLE_PATH="/mnt/c/Users/me/Tools/VSCode-E2E/Code.exe"
 ```
 
-The harness process runs in WSL, while VS Code runs as a Windows process on the Windows desktop. The harness handles WSL-to-Windows path conversion.
+The harness handles the required WSL-to-Windows path conversion.
 
-### Linux
+## Run API
 
-Use an unpacked Linux VS Code build and point the variable at its executable. A display must exist for the Linux GUI process.
-
-### macOS
-
-Use a dedicated VS Code application copy and point the variable at its executable inside the app bundle.
-
-## Run
-
-Run `vscode-debug-harness` from the root of the VS Code extension under development. `VSCODE_EXECUTABLE_PATH` is required.
+Run the command from the root of the VS Code extension under development:
 
 ```bash
-npx vscode-debug-harness <scenario-file>
+npx vscode-debug-harness ./harness/scenarios/bug.ts
 ```
 
-Options:
+The current working directory is treated as the extension under test.
 
-* `--attended` — leave VS Code open after the scenario finishes so the final state can be inspected by hand.
-* Default — run the scenario to completion and tear VS Code down.
+The argument is the TypeScript scenario to execute.
 
-A run produces output on two channels.
+Use:
 
-### Terminal
+```bash
+npx vscode-debug-harness ./harness/scenarios/bug.ts --attended
+```
 
-* scenario `console` output, streamed during the run;
-* path of the run workspace;
-* exit code `0` when the scenario completes;
-* non-zero exit code when the scenario throws or the run cannot start.
+to keep VS Code open after the scenario finishes.
 
-### Run workspace
+Without `--attended`, VS Code is closed when the run completes.
 
-The workspace is kept after the run.
+### What a run does
 
-It contains:
+The launcher:
 
-* files copied into the workspace by `openWith`, as the scenario left them;
-* files written by the extension;
-* screenshots created by the scenario.
+1. validates `VSCODE_EXECUTABLE_PATH`;
+2. creates a fresh temporary workspace;
+3. bundles the TypeScript scenario and its normal dependencies;
+4. launches the dedicated VS Code;
+5. loads the extension under development;
+6. loads the harness bridge extension;
+7. enables Chromium remote debugging;
+8. waits for the scenario result.
 
-## Scenario
+The bridge runs inside the new VS Code Extension Host and imports the bundled scenario.
+
+The scenario therefore runs inside the Extension Host. It can use the VS Code API directly. For webview interaction, Playwright connects from the Extension Host to the VS Code renderer over CDP.
+
+### Output
+
+The terminal receives:
+
+- the run workspace path;
+- scenario `console` output;
+- launch and runtime errors;
+- exit code `0` when the scenario completes;
+- a non-zero exit code when the scenario throws or the run cannot start.
+
+Each run uses a fresh temporary workspace. It is kept after the run so it can be inspected.
+
+The workspace contains:
+
+- copies created by `openWith`;
+- files written by the extension;
+- screenshots created by the scenario.
+
+The original scenario fixtures are not modified.
+
+## Interaction API
+
+A **scenario** is a TypeScript program that describes one debugging run.
+
+It imports interaction functions from `vscode-debug-harness` and extension-specific targets from normal local modules or packages:
 
 ```ts
 import {
@@ -93,70 +164,315 @@ import {
   click,
   drag,
   at,
-  type,
-  press,
   readSource,
 } from "vscode-debug-harness";
 
-import { classBox } from "my-extension-debug-targets";
+import {
+  classBox,
+} from "../targets";
 
-await openWith("./case.txt", "myExtension.editor");
+await openWith("./case.mmd", "myExtension.editor");
 
 await click(classBox("Order"));
-await drag(classBox("Order"), at(400, 200));
 
-await type("Customer");
-await press("Enter");
+await drag(
+  classBox("Order"),
+  at(400, 200),
+);
 
 console.log(await readSource());
 ```
 
 Top-level `await` is supported.
 
-A thrown error ends the run with a non-zero exit code.
+The launcher bundles normal scenario dependencies together with the scenario. A target library does not need to be registered separately.
 
-## API
+If the scenario throws, the harness run exits with a non-zero exit code.
 
-### Targets
+### Gestures
 
-A **target** tells a pointer gesture where to act.
+Gestures describe generic user input.
 
-There are two kinds.
+#### `click(target)`
 
-#### Coordinate target
+Click once.
 
-A coordinate target directly gives a point in webview coordinates.
+```ts
+await click(button("Delete"));
+```
+
+#### `doubleClick(target)`
+
+Double-click.
+
+```ts
+await doubleClick(classBox("Order"));
+```
+
+#### `drag(target, to)`
+
+Grab `target`, move it to `to`, and release.
+
+```ts
+await drag(
+  classBox("Order"),
+  at(500, 300),
+);
+```
+
+Both arguments are `Target`s.
+
+The first argument is what the user grabs.
+
+The second argument is the destination.
+
+#### `type(text)`
+
+Type into the current keyboard focus.
+
+```ts
+await type("Customer");
+```
+
+`type()` does not take a target. Establish focus first:
+
+```ts
+await click(nameField());
+await type("Customer");
+```
+
+#### `press(key)`
+
+Press one keyboard key.
+
+```ts
+await press("Enter");
+await press("Escape");
+```
+
+### Editor and document
+
+#### `openWith(sourceFile, viewType)`
+
+Copy a source file into the run workspace and open the copy using a VS Code editor.
+
+```ts
+await openWith(
+  "./case.mmd",
+  "myExtension.editor",
+);
+```
+
+Relative paths are resolved relative to the scenario file.
+
+The original source file is never modified.
+
+#### `runCommand(id, ...args)`
+
+Execute a VS Code command.
+
+```ts
+await runCommand(
+  "workbench.action.files.saveAll",
+);
+```
+
+Additional values are forwarded as separate command arguments:
+
+```ts
+await runCommand(
+  "myExtension.command",
+  firstArgument,
+  secondArgument,
+);
+```
+
+#### `readSource()`
+
+Return the in-memory text of the document most recently opened with `openWith()`.
+
+```ts
+const source = await readSource();
+```
+
+Unsaved edits are included.
+
+To inspect what is written to disk, save first:
+
+```ts
+await runCommand(
+  "workbench.action.files.saveAll",
+);
+```
+
+### Observation
+
+#### `exists(target)`
+
+Check whether an `ElementTarget` currently resolves to one visible element.
+
+```ts
+if (await exists(button("Delete"))) {
+  // ...
+}
+```
+
+`exists()` does not wait for the element to appear.
+
+If the target matches more than one element, it throws.
+
+Coordinate targets such as `at(...)` cannot be passed to `exists()`.
+
+#### `screenshot(name)`
+
+Save the current extension webview as `<run-workspace>/<name>.png`.
+
+```ts
+const path = await screenshot("after-drag");
+```
+
+The function returns the written file path.
+
+#### `webview()`
+
+Return the query context for the extension webview.
+
+```ts
+const view = await webview();
+
+const status = view.getByRole("status");
+```
+
+`WebviewContext` exposes supported Playwright locator operations. Locators returned by it are genuine Playwright locators, so element-level Playwright operations can be used directly:
+
+```ts
+const input = view.getByRole(
+  "textbox",
+  { name: "Name" },
+);
+
+await input.hover();
+await input.fill("Order");
+```
+
+The harness does not expose the full Playwright `Page` or `Frame`. It owns VS Code frame discovery and raw page-level input.
+
+## Target interface API
+
+The harness knows how to perform generic gestures, but it does not know the UI structure of the extension under test.
+
+An extension-specific target library defines addressable UI elements such as:
+
+```ts
+classBox("Order")
+button("Delete")
+resizeHandle("Order", "e")
+```
+
+The scenario imports these functions normally:
+
+```ts
+import {
+  classBox,
+  resizeHandle,
+} from "../targets";
+```
+
+### `Target`
+
+A pointer gesture accepts a `Target`:
+
+```ts
+type Target =
+  | CoordinateTarget
+  | ElementTarget;
+```
+
+### `ElementTarget`
+
+An `ElementTarget` describes a rendered UI element.
+
+```ts
+interface ElementTarget {
+  readonly kind: "element";
+
+  locate(
+    webview: WebviewContext,
+  ): Locator;
+}
+```
+
+The target library implements `locate()` and returns a Playwright `Locator`.
+
+For example:
+
+```ts
+import type {
+  ElementTarget,
+} from "vscode-debug-harness";
+
+export function button(
+  name: string,
+): ElementTarget {
+  return {
+    kind: "element",
+
+    locate(webview) {
+      return webview.getByRole(
+        "button",
+        { name },
+      );
+    },
+  };
+}
+```
+
+The target library answers:
+
+> Which rendered element does this target mean?
+
+The harness answers:
+
+> How should this gesture be performed on that element?
+
+For example:
+
+```ts
+await click(classBox("Order"));
+```
+
+combines an extension-specific target with a generic harness gesture.
+
+### `WebviewContext`
+
+`WebviewContext` is the query surface passed to `ElementTarget.locate()`.
+
+Conceptually:
+
+```ts
+interface WebviewContext {
+  locator(...): Locator;
+  getByRole(...): Locator;
+}
+```
+
+It is intentionally smaller than Playwright `Page` or `Frame`.
+
+### `CoordinateTarget`
+
+The harness also provides a built-in target for a point in webview coordinates:
 
 ```ts
 at(x, y)
 ```
 
-Example:
-
-```ts
-at(400, 200)
-```
-
-#### Element target
-
-An element target identifies a rendered element.
-
-Extension-specific element targets come from companion libraries.
-
 For example:
 
 ```ts
-classBox("Order")
-dropdown().option("dashed")
+await click(at(300, 200));
 ```
 
-The harness itself does not define the interface of a particular extension.
-
-An element target provides a Playwright locator for its element.
-
-The harness waits for that element when a gesture needs it, reads its current position, and performs the gesture there.
-
-The public target types are:
+Its public type is:
 
 ```ts
 interface CoordinateTarget {
@@ -164,111 +480,6 @@ interface CoordinateTarget {
   readonly x: number;
   readonly y: number;
 }
-
-interface ElementTarget {
-  readonly kind: "element";
-  locate(webview: WebviewContext): Locator;
-}
-
-type Target = CoordinateTarget | ElementTarget;
 ```
 
-`at(...)` returns a `CoordinateTarget` containing raw webview coordinates.
-
-Companion target libraries implement only `locate()`. The harness owns pointer positioning and gesture mechanics.
-
-`WebviewContext` is the query surface for the extension webview. It exposes Playwright locator operations supported by the harness. It is intentionally smaller than Playwright `Frame`.
-
-### Gestures
-
-Gestures are extension-independent user input.
-
-They use real pointer and keyboard input.
-
-```ts
-click(target)
-doubleClick(target)
-drag(target, to)
-
-type(text)
-press(key)
-```
-
-* `click(target)` — click the target once.
-* `doubleClick(target)` — double-click the target.
-* `drag(target, to)` — press on `target`, move to `to` in steps, then release.
-* `type(text)` — type text into the current keyboard focus, key by key.
-* `press(key)` — press one key by name, such as `Enter` or `Escape`.
-
-`target` and `to` accept any `Target`.
-
-The first argument of `drag` is the thing being grabbed.
-
-The second argument is its destination.
-
-Low-level pointer and keyboard operations remain available through Playwright.
-
-### Editor and document
-
-```ts
-openWith(sourceFile, viewType)
-runCommand(id, ...args)
-readSource()
-```
-
-* `openWith(sourceFile, viewType)` — copy the source file into the run workspace and open the copy using the editor registered under `viewType`. Relative source paths are resolved relative to the scenario file. The original file is never modified.
-* `runCommand(id, ...args)` — execute any VS Code command by id, forwarding each additional value as a separate command argument. This includes built-in commands and commands registered by the extension under test.
-* `readSource()` — return the in-memory text of the document most recently opened by `openWith()`, including unsaved edits.
-
-To inspect the saved file, save it first and then read the copy from the run workspace.
-
-```ts
-await runCommand("workbench.action.files.saveAll");
-```
-
-### Observation
-
-```ts
-exists(target)
-screenshot(name)
-webview()
-```
-
-* `exists(target: ElementTarget)` — report whether an element target currently resolves to an element. It does not wait.
-* `screenshot(name): Promise<string>` — save the webview screenshot as `name.png` in the run workspace and return the written file path.
-* `webview()` — return a `WebviewContext` for querying the extension webview with supported Playwright locator operations.
-
-Coordinate targets such as `at(...)` are not valid arguments to `exists`.
-
-Use `webview()` when the scenario needs a direct locator query that the higher-level API does not provide. It does not expose a full Playwright `Frame`.
-
-## Target libraries
-
-The harness is independent of any particular extension.
-
-An extension can provide a companion target library containing its stable UI target vocabulary.
-
-For example:
-
-```ts
-classBox("Order")
-resizeHandle("Order", "e")
-editPane().dropdown()
-option("dashed")
-```
-
-The companion library translates these addresses into Playwright locators.
-
-It does not implement gestures.
-
-The separation is:
-
-```text
-extension
-    defines its UI targets
-
-vscode-debug-harness
-    resolves targets
-    performs generic gestures
-    controls VS Code
-```
+The extension-specific target library does not need to implement coordinate targets.

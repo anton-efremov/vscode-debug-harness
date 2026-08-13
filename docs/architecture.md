@@ -2,11 +2,11 @@
 
 `vscode-debug-harness` has three runtime parts. They deliberately communicate only through public VS Code APIs, Chromium's debugging protocol, and files in the run workspace.
 
-## Controller process
+## Launcher process
 
-The terminal CLI is a Node process. Before creating a run, it requires the caller to supply a dedicated portable or unpacked desktop VS Code executable through `VSCODE_EXECUTABLE_PATH`. The controller does not discover VS Code or fall back to an installed executable. It then validates the scenario and the extension in the current working directory, creates a unique workspace under the operating system's temporary directory, and bundles the TypeScript scenario to ESM with esbuild. ESM preserves top-level `await`.
+The terminal launcher is a Node process. Before creating a run, it requires the caller to supply a dedicated portable or unpacked desktop VS Code executable through `VSCODE_EXECUTABLE_PATH`. The launcher does not discover VS Code or fall back to an installed executable. It then validates the scenario and the extension in the current working directory, creates a unique workspace under the operating system's temporary directory, and bundles the TypeScript scenario to ESM with esbuild. ESM preserves top-level `await`.
 
-The controller bundles normal scenario dependencies, including companion target libraries, into the scenario. Only runtime-provided modules such as `vscode` remain external. It then starts the supplied executable with:
+The launcher bundles normal scenario dependencies, including companion target libraries, into the scenario. Only runtime-provided modules such as `vscode` remain external. It then starts the supplied executable with:
 
 * a clean user-data directory and extensions directory (inside the run workspace for native launches, or in Windows-local temporary storage when Windows VS Code is launched from WSL so Chromium storage and webview service workers work correctly);
 * the current directory as an extension development path;
@@ -19,7 +19,7 @@ Portable VS Code plus isolated run state is the only supported runtime model. Th
 The process boundary is:
 
 ```text
-harness controller
+harness launcher
     runs where Node runs
 
 VS Code client
@@ -30,7 +30,7 @@ For example, WSL Node can launch a Windows portable `Code.exe`, which owns its W
 
 For Windows VS Code launched from WSL, Linux paths are converted to UNC paths and `wsl.localhost` is added to that child process's UNC allowlist. The user's normal VS Code profile is not changed.
 
-The controller streams the child process output and scenario console event records. It waits for an atomically-written result record. The workspace is never deleted. In an unattended run the bridge requests a normal VS Code shutdown; in an attended run the controller detaches after the result and leaves the window open.
+The launcher streams the child process output and scenario console event records. It waits for an atomically-written result record. The workspace is never deleted. In an unattended run the bridge requests a normal VS Code shutdown; in an attended run the launcher detaches after the result and leaves the window open.
 
 ## Bridge extension
 
@@ -71,7 +71,7 @@ An extension companion library defines only `ElementTarget.locate()`. The harnes
 This split keeps target vocabulary extension-specific and keeps gestures reusable:
 
 ```text
-terminal controller
+terminal launcher
   -> launches VS Code and tails run records
 
 VS Code extension host

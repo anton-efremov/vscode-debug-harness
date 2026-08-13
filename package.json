@@ -5,7 +5,7 @@
   "type": "commonjs",
   "main": "dist/api.js",
   "types": "dist/api.d.ts",
-  "bin": { "vscode-debug-harness": "dist/cli.js" },
+  "bin": { "vscode-debug-harness": "dist/launcher.js" },
   "files": ["dist", "bridge", "README.md", "docs/architecture.md", "LICENSE"],
   "engines": { "node": ">=20" },
   "scripts": {

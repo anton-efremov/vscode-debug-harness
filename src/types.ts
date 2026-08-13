@@ -1,3 +1,6 @@
+/**
+ * @fileoverview Defines the public target and webview-query types used by scenarios.
+ */
 import type { Frame, Locator } from "playwright-core";
 
 export type { Locator } from "playwright-core";

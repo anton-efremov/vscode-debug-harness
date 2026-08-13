@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 const projectRoot = path.resolve(__dirname, "../..");
 const extensionRoot = path.join(__dirname, "fixture-extension");
 const scenarios = path.join(__dirname, "scenarios");
-const cli = path.join(projectRoot, "dist", "cli.js");
+const cli = path.join(projectRoot, "dist", "launcher.js");
 
 async function run(scenario: string): Promise<{ code: number; output: string; workspace: string }> {
   const executable = process.env.VSCODE_EXECUTABLE_PATH;

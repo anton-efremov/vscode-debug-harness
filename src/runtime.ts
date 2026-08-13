@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Implements scenario interactions across VS Code and Playwright.
+ * Keeps those runtime dependencies behind the public scenario API.
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -22,6 +26,7 @@ function webviewContext(host: Frame): WebviewContext {
   };
 }
 
+/** Converts a webview-local coordinate to its current workbench page position. */
 export async function coordinateToPagePoint(target: CoordinateTarget, frame: Frame): Promise<PagePoint> {
   const element = await frame.frameElement();
   const box = await element.boundingBox();
@@ -29,18 +34,21 @@ export async function coordinateToPagePoint(target: CoordinateTarget, frame: Fra
   return { x: box.x + target.x, y: box.y + target.y };
 }
 
+/** Clicks either a located element or a webview-local coordinate. */
 export async function clickTarget(page: Page, webview: WebviewContext, frame: Frame, target: Target): Promise<void> {
   if (target.kind === "element") { await target.locate(webview).click(); return; }
   const point = await coordinateToPagePoint(target, frame);
   await page.mouse.click(point.x, point.y);
 }
 
+/** Double-clicks either a located element or a webview-local coordinate. */
 export async function doubleClickTarget(page: Page, webview: WebviewContext, frame: Frame, target: Target): Promise<void> {
   if (target.kind === "element") { await target.locate(webview).dblclick(); return; }
   const point = await coordinateToPagePoint(target, frame);
   await page.mouse.click(point.x, point.y, { clickCount: 2 });
 }
 
+/** Drags between element or coordinate targets and always releases the mouse. */
 export async function dragTarget(page: Page, webview: WebviewContext, frame: Frame, target: Target, to: Target): Promise<void> {
   if (target.kind === "element") await target.locate(webview).hover();
   else { const point = await coordinateToPagePoint(target, frame); await page.mouse.move(point.x, point.y); }
@@ -51,6 +59,7 @@ export async function dragTarget(page: Page, webview: WebviewContext, frame: Fra
   } finally { await page.mouse.up(); }
 }
 
+/** Checks that an element target has zero or one match and reports its visibility. */
 export async function elementExists(webview: WebviewContext, target: ElementTarget): Promise<boolean> {
   const locator = target.locate(webview);
   const count = await locator.count();
