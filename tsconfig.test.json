@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "baseUrl": ".", "paths": { "vscode-debug-harness": ["src/api.ts"] } },
+  "include": ["src/**/*.ts", "test/**/*.ts", "vitest*.mts", "eslint.config.mjs"]
+}

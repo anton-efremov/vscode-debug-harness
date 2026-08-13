@@ -1,0 +1,9 @@
+{
+  "name": "vscode-debug-harness-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "engines": { "vscode": "^1.90.0" },
+  "main": "./dist/extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {}
+}
