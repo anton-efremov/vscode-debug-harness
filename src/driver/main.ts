@@ -7,12 +7,12 @@ import { ENV_WORKSPACE, requireEnv } from "../protocol";
 import type { ElementTarget, Target } from "../types";
 import { Connection } from "./connection";
 import { clickTarget, doubleClickTarget, dragTarget, elementExists } from "./gestures";
-import { VscodeDriver } from "./vscode";
+import { HostApi } from "./host-api";
 import { resolveWebview, type ResolvedWebview } from "./webview";
 
 export class Driver {
   private readonly connection = new Connection();
-  private readonly vscode = new VscodeDriver();
+  private readonly hostApi = new HostApi();
 
   private async resolvedWebview(): Promise<ResolvedWebview> {
     return resolveWebview(await this.connection.page());
@@ -56,17 +56,17 @@ export class Driver {
 
   /** Copies a source into the run workspace and opens it with the requested editor. */
   async openWith(sourceFile: string, viewType: string): Promise<void> {
-    await this.vscode.openWith(sourceFile, viewType);
+    await this.hostApi.openWith(sourceFile, viewType);
   }
 
   /** Executes a VS Code command with the supplied arguments. */
   async runCommand<T>(id: string, ...args: unknown[]): Promise<T> {
-    return this.vscode.runCommand<T>(id, ...args);
+    return this.hostApi.runCommand<T>(id, ...args);
   }
 
   /** Reads the current text of the source most recently opened by the scenario. */
   async readSource(): Promise<string> {
-    return this.vscode.readSource();
+    return this.hostApi.readSource();
   }
 
   /** Reports whether an element target resolves to exactly one visible element. */

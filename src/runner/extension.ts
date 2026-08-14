@@ -29,12 +29,19 @@ async function writeResult(file: string, result: ResultRecord): Promise<void> {
   await fs.rename(temporary, file);
 }
 
-/** Activates the runner and executes the scenario configured by the Launcher. */
+/** 
+ * VS Code's required entry point for every extension
+ * Activates the runner and executes the scenario configured by the Launcher. 
+ */
 export async function activate(): Promise<void> {
+
+  // Read configuration and guard
   const scenario = process.env[ENV_SCENARIO];
   const resultFile = process.env[ENV_RESULT];
   const eventFile = process.env[ENV_EVENTS];
   if (!scenario || !resultFile || !eventFile) return;
+
+  // Console redirection
   const original = {
     log: console.log,
     info: console.info,
@@ -43,12 +50,15 @@ export async function activate(): Promise<void> {
   };
   let eventWrites = Promise.resolve();
   const relay = (...values: unknown[]): void => {
+    // makes every write wait for the previous and redirects stream to file
     eventWrites = eventWrites.then(() => writeEvent(eventFile, values));
   };
   console.log = relay;
   console.info = relay;
   console.warn = relay;
   console.error = relay;
+
+  // Run the scenario
   try {
     await import(pathToFileURL(scenario).href);
     await eventWrites;

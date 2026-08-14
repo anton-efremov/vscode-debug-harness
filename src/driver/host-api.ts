@@ -1,5 +1,5 @@
 /**
- * @fileoverview Drives VS Code editor operations and owns the currently opened source state.
+ * @fileoverview Provides the driver's extension-host API and owns the currently opened source state.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -15,7 +15,7 @@ interface VscodeApi {
   commands: { executeCommand<T>(id: string, ...args: unknown[]): Promise<T> };
 }
 
-export class VscodeDriver {
+export class HostApi {
   private openedSource?: string;
 
   private api(): VscodeApi {

@@ -21,6 +21,10 @@ async function registerWebviewSelector(selectors: Selectors): Promise<void> {
   });
 }
 
+/**
+ * Holds the real state: the CDP Browser and the workbench Page, 
+ * created on first use and reused for the rest of the run.
+ */
 export class Connection {
   private browser?: Browser;
   private workbench?: Page;

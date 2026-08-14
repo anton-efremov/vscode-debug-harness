@@ -101,77 +101,46 @@ There are no private channels and no shared in-process state between the launche
 
 ```text
 src/
-  api.ts                 public scenario functions (package entry)
-  types.ts               public target and webview types
-  protocol.ts            shared contract between the three parts
+  api.ts                 public scenario API; one-line forwards to the
+                         driver singleton, no logic (only `at` builds locally)
+  types.ts               target contract: Target = CoordinateTarget (x, y in
+                         webview pixels) | ElementTarget (locate(root: Locator)
+                         → Locator); targets describe, the driver acts
+  protocol.ts            env variable names and record shapes; no raw
+                         VSCODE_DEBUG_HARNESS_* string outside it
   launcher/
-    main.ts              CLI parsing and run orchestration
-    validate-inputs.ts   validation of executable, extension, scenario
-    prepare-workspace.ts run workspace and internal file paths
-    bundle-scenario.ts   esbuild bundling of the scenario
-    wsl.ts               all WSL-crossing logic
-    launch-vscode.ts     CDP port, VS Code arguments, environment, spawn
-    report-output.ts     event tailing, result polling, final drain
+    main.ts              CLI entry; runHarness only calls sibling files
+    validate-inputs.ts   validates executable, extension, scenario
+    prepare-workspace.ts creates the run workspace and its paths
+    bundle-scenario.ts   bundles the scenario with esbuild
+    wsl.ts               WSL crossing; the only file that knows .exe,
+                         wslpath, cmd.exe
+    launch-vscode.ts     allocates the port; starts VS Code
+    report-output.ts     tails events; polls the result
   runner/
-    extension.ts         the runner extension
+    extension.ts         runs the scenario; reports its outcome; blind to
+                         the tested extension; never imports the driver
   driver/
-    main.ts              Driver class, singleton, run state
-    connection.ts        CDP connection and workbench page lookup
-    webview.ts           webview frame resolution and WebviewContext
-    gestures.ts          pure pointer-gesture functions
-    vscode.ts            VS Code API access
+    main.ts              Driver class and singleton; composes Connection
+                         (renderer side) and HostApi (host side)
+    connection.ts        CDP connection; owns the Browser/Page state
+    webview.ts           finds the webview fresh per gesture; builds its
+                         root Locator
+    gestures.ts          pure pointer gestures; the unit-test surface
+    host-api.ts          vscode module access; owns the opened source
 ```
 
-### 3.2 Modules
+The packaged runner extension lives in `runner/` at the repository root; the build copies the compiled extension into it.
 
-**Top level:**
+### 3.2 Dependencies
 
-- `api.ts` — the package entry. Each public function is a one-line call into the driver singleton. When section 1 says a scenario "imports from the driver," this module is the actual import path.
-- `types.ts` — the public types. Defines the target contract: `Target` is a union of `CoordinateTarget` (`kind`, `x`, `y` in webview-local pixels) and `ElementTarget` (`kind` plus `locate(webview)` returning a Playwright `Locator`). The target library implements `locate()`; the driver consumes targets. Also exports `WebviewContext` and re-exports `Locator`. Target libraries import only this module.
-- `protocol.ts` — the contract between launcher, runner, and driver:
-    - one named constant per harness environment variable;
-    - the `ResultRecord` and `EventRecord` shapes.
-    - Rule: no raw `VSCODE_DEBUG_HARNESS_*` string appears outside this module.
+`launcher/`, `runner/`, and `driver/` are isolated: they never import each other and cooperate only through the runtime channels. In code they share only the two contract modules — `protocol.ts` (channel vocabulary) and `types.ts` (target vocabulary) — which themselves import nothing internal.
 
-**launcher/:**
+`api.ts` is the driver's public interface for scenarios and depends only on `driver/main.ts` and `types.ts`; the launcher's interface is its command line; the runner exposes nothing importable.
 
-- `main.ts` — `RunOptions`, `RunResult`, argument parsing, and `runHarness`. `runHarness` is a linear orchestration; every step is a call into a sibling file.
-- `validate-inputs.ts` — resolves and validates the executable, the extension manifest, and the scenario path. Fails early with specific messages.
-- `prepare-workspace.ts` — creates the workspace and the internal paths (bundle, result, events).
-- `bundle-scenario.ts` — esbuild invocation, including the console-relay banner that redirects scenario console calls into the event file.
-- `wsl.ts` — path translation, UNC allowlist, Windows-local data root. The only file that knows about `.exe`, `wslpath`, and `cmd.exe`.
-- `launch-vscode.ts` — allocates the free DevTools port, builds the argument list and environment from `protocol.ts` constants, and spawns the process.
-- `report-output.ts` — tails the event file, polls the result file, and drains late event records after completion.
+Unit tests touch only the pure and public modules — `api.ts`, `types.ts`, `driver/gestures.ts`, `launcher/main.ts` — never the stateful adapters.
 
-**runner/:**
-
-- `extension.ts` — the runner:
-    - activates on `onStartupFinished`;
-    - imports the scenario bundle named by the environment;
-    - captures console calls into the event file;
-    - writes the result record;
-    - requests shutdown in unattended runs.
-- The runner has no knowledge of the tested extension and never imports the driver.
-- The packaged extension folder is `runner/` at the repository root; the build copies the compiled extension into it.
-
-**driver/:**
-
-- `main.ts` — class `Driver` and the exported singleton. Owns run state: the connection and the last opened source. Each public operation is a linear composition of the other driver files.
-- `connection.ts` — connects to the DevTools port with retry, finds the workbench page, registers the `vscodewebview` selector engine. Owns the `Browser` and `Page` state.
-- `webview.ts` — resolves the single visible webview frame and builds `WebviewContext`. Stateless; takes a `Page`.
-- `gestures.ts` — pure functions: coordinate translation, click, double-click, drag, existence check. Consumes targets from `types.ts`. No environment access, no connection state. This is the unit-test surface.
-- `vscode.ts` — access to the `vscode` module through `createRequire`; implements the VS Code API operations (`openWith`, `runCommand`, `readSource`).
-
-### 3.3 Dependency rules
-
-- `api.ts` depends only on `driver/main.ts` and `types.ts`.
-- `types.ts` depends on nothing internal.
-- `protocol.ts` depends on nothing internal.
-- `launcher/`, `runner/`, and `driver/` never import each other. Their only shared imports are `protocol.ts` and `types.ts`.
-- Inside `driver/`, `gestures.ts` imports only `types.ts`.
-- Unit tests import `api.ts`, `types.ts`, `driver/gestures.ts`, and `launcher/main.ts`. They do not import connection or VS Code access code.
-
-### 3.4 Build outputs
+### 3.3 Build outputs
 
 - `dist/` — compiled package: `api.js` (+ types) as the library entry, `launcher/main.js` as the `bin` entry.
 - `dist/scenario-api.mjs` — the driver bundled as ESM. The scenario bundler aliases the package name to this file, so scenarios get the driver without Node resolution inside the extension host.
@@ -209,16 +178,16 @@ WSL variant: WSL Node may launch a Windows portable `Code.exe`. Then the launche
 
 The scenario's top-level code runs inside the extension host. Each call it makes enters through `api.ts` into `driver/main.ts`, which routes it onto one of two paths:
 
-- **VS Code API path** — `openWith`, `runCommand`, `readSource`. `driver/vscode.ts` calls the public `vscode` module directly, available because the scenario runs in the extension host. `readSource` reads the in-memory document, including unsaved changes.
+- **VS Code API path** — `openWith`, `runCommand`, `readSource`. `driver/host-api.ts` calls the public `vscode` module directly, available because the scenario runs in the extension host. `readSource` reads the in-memory document, including unsaved changes.
 - **Input path** — `click`, `doubleClick`, `drag`, `type`, `press`, queries, screenshots. Real Chromium input over CDP, exactly as from a user.
 
 A gesture call on the input path goes through three steps:
 
 1. **Connect** — `driver/connection.ts` connects to the DevTools port (retrying until the endpoint is up) and finds the workbench page. The connection is made once and reused.
-2. **Resolve the webview** — `driver/webview.ts` selects the single visible frame whose URL uses the `vscode-webview://` scheme. Zero candidates are retried for ten seconds; more than one visible candidate is an error. One visible webview at a time is a stated limit of the current version.
-3. **Resolve the target and act** — `driver/gestures.ts` turns the target into input. An `ElementTarget` is resolved through its `locate()` and acted on through the resulting Playwright locator. A `CoordinateTarget` is translated to page coordinates using the webview frame's position at gesture time. The input is then sent over CDP.
+2. **Resolve the webview** — `driver/webview.ts` selects the single visible frame whose URL uses the `vscode-webview://` scheme and builds its root `Locator`, rooted at the extension's document. Zero candidates are retried for ten seconds; more than one visible candidate is an error. One visible webview at a time is a stated limit of the current version.
+3. **Resolve the target and act** — `driver/gestures.ts` turns the target into input. An `ElementTarget` is resolved by calling its `locate(root)` with the root `Locator` and acted on through the returned locator. A `CoordinateTarget` is translated to page coordinates using the webview frame's position at gesture time. The input is then sent over CDP.
 
-Element queries run against `WebviewContext`, not a Playwright `Frame`: a restricted query surface with `locator()` and `getByRole()` rooted at the extension's document. These compose genuine Playwright locator engines, so CSS, role, and accessible-name behavior remain Playwright behavior.
+Element queries are plain Playwright: `locate()` receives a genuine `Locator`, so the full query API (`locator`, `getByRole`, `getByText`, chaining, ...) is available to targets, with Playwright's documented behavior. By convention, targets only describe elements; actions go through driver functions.
 
 Throughout execution, the scenario's console calls are appended to the event file, and `launcher/report-output.ts` tails the file and prints each record to the terminal live.
 
