@@ -77,7 +77,7 @@ Portable VS Code
 
 The processes communicate through three channels:
 
-- **Environment variables** (launcher process → VS Code). Set once at start; carry the run configuration: the paths of the scenario bundle, workspace, result file, and event file; the DevTools port; the package root; the attended flag. Inside the extension host they are read by the **runner** and the **driver**. Defined once in `src/protocol.ts`.
+- **Environment variables** (launcher process → VS Code). Set once at start; carry the run configuration: the paths of the scenario bundle, the scenario's directory, workspace, result file, and event file; the DevTools port; the package root; the attended flag. Inside the extension host they are read by the **runner** and the **driver**. Defined once in `src/protocol.ts`.
 - **Files in the run workspace** (launcher process ↔ extension host process):
     - the scenario bundle — written by the **launcher**, imported by the **runner**;
     - the event file (JSON lines, one record per console call) — appended by the **scenario**'s console relay, tailed and printed live by the **launcher**;
@@ -109,7 +109,8 @@ src/
   protocol.ts            env variable names and record shapes; no raw
                          VSCODE_DEBUG_HARNESS_* string outside it
   launcher/
-    main.ts              CLI entry; runHarness only calls sibling files
+    main.ts              CLI entry; each run step is a sibling-file call,
+                         only process wiring lives inline
     validate-inputs.ts   validates executable, extension, scenario
     prepare-workspace.ts creates the run workspace and its paths
     bundle-scenario.ts   bundles the scenario with esbuild
@@ -120,6 +121,7 @@ src/
   runner/
     extension.ts         runs the scenario; reports its outcome; blind to
                          the tested extension; never imports the driver
+    package.json         the runner's extension manifest
   driver/
     main.ts              Driver class and singleton; composes Connection
                          (renderer side) and HostApi (host side)
@@ -130,7 +132,7 @@ src/
     host-api.ts          vscode module access; owns the opened source
 ```
 
-The packaged runner extension lives in `runner/` at the repository root; the build copies the compiled extension into it.
+The build assembles the complete runner extension into `dist/runner/` (manifest copied from `src/runner/`, code bundled).
 
 ### 3.2 Dependencies
 
@@ -144,7 +146,7 @@ Unit tests touch only the pure and public modules — `api.ts`, `types.ts`, `dri
 
 - `dist/` — compiled package: `api.js` (+ types) as the library entry, `launcher/main.js` as the `bin` entry.
 - `dist/scenario-api.mjs` — the driver bundled as ESM. The scenario bundler aliases the package name to this file, so scenarios get the driver without Node resolution inside the extension host.
-- `runner/dist/extension.js` — the compiled runner, copied into the packaged extension folder.
+- `dist/runner/` — the runner as a complete VS Code extension: `package.json` copied from `src/runner/`, `extension.js` bundled self-contained (`vscode` external).
 
 ---
 

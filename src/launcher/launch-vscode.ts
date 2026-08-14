@@ -58,7 +58,7 @@ export async function prepareLaunch(
     "--skip-release-notes",
     "--disable-workspace-trust",
     `--extensionDevelopmentPath=${pathForExecutable(extensionPath, executable)}`,
-    `--extensionDevelopmentPath=${pathForExecutable(path.join(root, "runner"), executable)}`,
+    `--extensionDevelopmentPath=${pathForExecutable(path.join(root, "dist", "runner"), executable)}`,
     `--user-data-dir=${joinDataPath(dataRoot.child, "user-data")}`,
     `--extensions-dir=${joinDataPath(dataRoot.child, "extensions")}`,
     `--remote-debugging-port=${port}`,

@@ -124,11 +124,11 @@ The launcher:
 3. bundles the TypeScript scenario and its normal dependencies;
 4. launches the dedicated VS Code;
 5. loads the extension under development;
-6. loads the harness bridge extension;
+6. loads the harness runner extension;
 7. enables Chromium remote debugging;
 8. waits for the scenario result.
 
-The bridge runs inside the new VS Code Extension Host and imports the bundled scenario.
+The runner runs inside the new VS Code Extension Host and imports the bundled scenario.
 
 The scenario therefore runs inside the Extension Host. It can use the VS Code API directly. For webview interaction, Playwright connects from the Extension Host to the VS Code renderer over CDP.
 
@@ -335,7 +335,7 @@ The function returns the written file path.
 
 #### `webview()`
 
-Return the query context for the extension webview.
+Return the root locator for the extension webview as a `Promise<Locator>`.
 
 ```ts
 const view = await webview();
@@ -343,7 +343,7 @@ const view = await webview();
 const status = view.getByRole("status");
 ```
 
-`WebviewContext` exposes supported Playwright locator operations. Locators returned by it are genuine Playwright locators, so element-level Playwright operations can be used directly:
+The returned value is a genuine Playwright `Locator` rooted at the webview's document. The full Playwright locator query API is available, including `locator`, `getByRole`, `getByText`, filtering, and chaining:
 
 ```ts
 const input = view.getByRole(
@@ -397,12 +397,14 @@ interface ElementTarget {
   readonly kind: "element";
 
   locate(
-    webview: WebviewContext,
+    root: Locator,
   ): Locator;
 }
 ```
 
-The target library implements `locate()` and returns a Playwright `Locator`.
+The target library implements `locate(root)` and returns a Playwright `Locator`. The `root` argument is a genuine Playwright `Locator` rooted at the webview's document, so the full locator query API is available.
+
+By convention, targets only describe elements. All actions go through driver functions.
 
 For example:
 
@@ -417,8 +419,8 @@ export function button(
   return {
     kind: "element",
 
-    locate(webview) {
-      return webview.getByRole(
+    locate(root) {
+      return root.getByRole(
         "button",
         { name },
       );
@@ -442,21 +444,6 @@ await click(classBox("Order"));
 ```
 
 combines an extension-specific target with a generic harness gesture.
-
-### `WebviewContext`
-
-`WebviewContext` is the query surface passed to `ElementTarget.locate()`.
-
-Conceptually:
-
-```ts
-interface WebviewContext {
-  locator(...): Locator;
-  getByRole(...): Locator;
-}
-```
-
-It is intentionally smaller than Playwright `Page` or `Frame`.
 
 ### `CoordinateTarget`
 
