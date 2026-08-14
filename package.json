@@ -12,7 +12,8 @@
     "clean": "node scripts/build/clean.mjs",
     "build": "npm run clean && tsc -p tsconfig.build.json && node scripts/build/build-scenario-api.mjs && node scripts/build/bundle-runner.mjs",
     "check": "npm run build && tsc -p tsconfig.test.json --noEmit && eslint . && npm test",
-    "test": "vitest run",
+    "test": "npm run test:unit",
+    "test:unit": "vitest run --config vitest.unit.config.mts",
     "test:e2e": "npm run build && vitest run --config vitest.e2e.config.mts",
     "prepack": "npm run check"
   },

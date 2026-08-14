@@ -2,10 +2,10 @@
  * @fileoverview Verifies public target types and stateless driver interactions.
  */
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
-import { at, runCommand } from "../src/api";
-import { clickTarget, coordinateToPagePoint, doubleClickTarget, dragTarget, elementExists } from "../src/driver/gestures";
-import { driver } from "../src/driver/main";
-import type { ElementTarget, Locator } from "../src/types";
+import { at, runCommand } from "../../src/api";
+import { clickTarget, coordinateToPagePoint, doubleClickTarget, dragTarget, elementExists } from "../../src/driver/gestures";
+import { driver } from "../../src/driver/main";
+import type { ElementTarget, Locator } from "../../src/types";
 
 function frameWithBox(x = 100, y = 50): any {
   return { frameElement: vi.fn().mockResolvedValue({ boundingBox: vi.fn().mockResolvedValue({ x, y, width: 500, height: 400 }) }) };
