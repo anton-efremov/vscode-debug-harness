@@ -1,5 +1,5 @@
 /**
- * @fileoverview Streams scenario events and waits for the runner's result record.
+ * @fileoverview Reports scenario events and waits for the runner's result record.
  */
 import type { ChildProcess } from "node:child_process";
 import fs from "node:fs/promises";

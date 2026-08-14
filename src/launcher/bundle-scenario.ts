@@ -4,7 +4,7 @@
 import path from "node:path";
 import { build } from "esbuild";
 import { ENV_EVENTS } from "../protocol";
-import { packageRoot } from "./run-files";
+import { packageRoot } from "./prepare-workspace";
 
 /** Bundles the scenario and its ordinary dependencies for the extension host. */
 export async function bundleScenario(scenario: string, outfile: string): Promise<void> {

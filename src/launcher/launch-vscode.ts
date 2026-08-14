@@ -2,6 +2,7 @@
  * @fileoverview Builds and starts the isolated VS Code process for one prepared run.
  */
 import { spawn, type ChildProcess } from "node:child_process";
+import net from "node:net";
 import path from "node:path";
 import {
   ENV_ATTENDED,
@@ -13,7 +14,7 @@ import {
   ENV_SCENARIO_DIR,
   ENV_WORKSPACE,
 } from "../protocol";
-import { packageRoot, type RunFiles } from "./run-files";
+import { packageRoot, type RunFiles } from "./prepare-workspace";
 import { childEnvironment, createLaunchDataRoot, pathForExecutable, type LaunchDataRoot } from "./wsl";
 
 export interface Launch {
@@ -21,6 +22,20 @@ export interface Launch {
   arguments: string[];
   environment: NodeJS.ProcessEnv;
   dataRoot: LaunchDataRoot;
+}
+
+/** Allocates an ephemeral loopback port for Chromium DevTools. */
+export async function freePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.unref();
+    server.on("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      if (!address || typeof address === "string") return reject(new Error("Could not allocate a DevTools port"));
+      server.close(() => resolve(address.port));
+    });
+  });
 }
 
 /** Builds the complete VS Code process invocation for the prepared run. */

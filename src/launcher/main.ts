@@ -3,11 +3,11 @@
  * @fileoverview Launches one debug-harness run from the terminal.
  * Validates the run, prepares its workspace, launches VS Code, and reports completion.
  */
-import { bundleScenario } from "./bundle";
-import { validateExecutable, validateExtension, validateScenario } from "./inputs";
-import { drainRemainingEvents, tailEvents, waitForResult } from "./run-output";
-import { createRunFiles, freePort } from "./run-files";
-import { launchVsCode, prepareLaunch } from "./vscode-launch";
+import { bundleScenario } from "./bundle-scenario";
+import { freePort, launchVsCode, prepareLaunch } from "./launch-vscode";
+import { createRunFiles } from "./prepare-workspace";
+import { drainRemainingEvents, tailEvents, waitForResult } from "./report-output";
+import { validateExecutable, validateExtension, validateScenario } from "./validate-inputs";
 import { removeLaunchDataRoot } from "./wsl";
 
 export interface RunOptions {

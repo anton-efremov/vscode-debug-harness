@@ -106,12 +106,12 @@ src/
   protocol.ts            shared contract between the three parts
   launcher/
     main.ts              CLI parsing and run orchestration
-    inputs.ts            validation of executable, extension, scenario
-    run-files.ts         run workspace and internal file paths
-    bundle.ts            esbuild bundling of the scenario
+    validate-inputs.ts   validation of executable, extension, scenario
+    prepare-workspace.ts run workspace and internal file paths
+    bundle-scenario.ts   esbuild bundling of the scenario
     wsl.ts               all WSL-crossing logic
-    vscode-launch.ts     VS Code arguments, environment, spawn
-    run-output.ts        event tailing, result polling, final drain
+    launch-vscode.ts     CDP port, VS Code arguments, environment, spawn
+    report-output.ts     event tailing, result polling, final drain
   runner/
     extension.ts         the runner extension
   driver/
@@ -136,12 +136,12 @@ src/
 **launcher/:**
 
 - `main.ts` — `RunOptions`, `RunResult`, argument parsing, and `runHarness`. `runHarness` is a linear orchestration; every step is a call into a sibling file.
-- `inputs.ts` — resolves and validates the executable, the extension manifest, and the scenario path. Fails early with specific messages.
-- `run-files.ts` — creates the workspace and the internal paths (bundle, result, events); allocates the free DevTools port.
-- `bundle.ts` — esbuild invocation, including the console-relay banner that redirects scenario console calls into the event file.
+- `validate-inputs.ts` — resolves and validates the executable, the extension manifest, and the scenario path. Fails early with specific messages.
+- `prepare-workspace.ts` — creates the workspace and the internal paths (bundle, result, events).
+- `bundle-scenario.ts` — esbuild invocation, including the console-relay banner that redirects scenario console calls into the event file.
 - `wsl.ts` — path translation, UNC allowlist, Windows-local data root. The only file that knows about `.exe`, `wslpath`, and `cmd.exe`.
-- `vscode-launch.ts` — builds the argument list and environment from `protocol.ts` constants; spawns the process.
-- `run-output.ts` — tails the event file, polls the result file, drains late event records after completion.
+- `launch-vscode.ts` — allocates the free DevTools port, builds the argument list and environment from `protocol.ts` constants, and spawns the process.
+- `report-output.ts` — tails the event file, polls the result file, and drains late event records after completion.
 
 **runner/:**
 
@@ -185,17 +185,17 @@ A step-by-step description of one run. Actors are the modules from section 3.
 
 ### 4.1 Launch
 
-1. `launcher/inputs.ts` validates three inputs:
+1. `launcher/validate-inputs.ts` validates three inputs:
     - the VS Code executable from `VSCODE_EXECUTABLE_PATH`;
     - the tested extension (manifest in the working directory or `extensionPath`);
     - the scenario file.
-2. `launcher/run-files.ts` creates a unique run workspace under the temporary directory and allocates a free DevTools port. The workspace holds the opened files, the screenshots, and an internal directory with the scenario bundle, the result file, and the event file.
-3. `launcher/bundle.ts` bundles the scenario with esbuild:
+2. `launcher/prepare-workspace.ts` creates a unique run workspace under the temporary directory. The workspace holds the opened files, the screenshots, and an internal directory with the scenario bundle, the result file, and the event file.
+3. `launcher/bundle-scenario.ts` bundles the scenario with esbuild:
     - output is ESM, so top-level `await` works;
     - ordinary dependencies, including the target library, are bundled in;
     - the driver is bundled in through an alias on the package name;
     - only runtime-provided modules such as `vscode` stay external.
-4. `launcher/vscode-launch.ts` starts VS Code with:
+4. `launcher/launch-vscode.ts` allocates a free DevTools port and starts VS Code with:
     - a clean user-data directory and extensions directory;
     - the tested extension as one extension development path;
     - the runner as a second extension development path;
@@ -220,12 +220,12 @@ A gesture call on the input path goes through three steps:
 
 Element queries run against `WebviewContext`, not a Playwright `Frame`: a restricted query surface with `locator()` and `getByRole()` rooted at the extension's document. These compose genuine Playwright locator engines, so CSS, role, and accessible-name behavior remain Playwright behavior.
 
-Throughout execution, the scenario's console calls are appended to the event file, and `launcher/run-output.ts` tails the file and prints each record to the terminal live.
+Throughout execution, the scenario's console calls are appended to the event file, and `launcher/report-output.ts` tails the file and prints each record to the terminal live.
 
 ### 4.3 Completion
 
 1. When the scenario module finishes, `runner/extension.ts` writes the result record: success, or the thrown error with its stack.
-2. `launcher/run-output.ts`, which has been polling for the result, reads it, drains the remaining event records, and the launcher exits with the scenario's outcome:
+2. `launcher/report-output.ts`, which has been polling for the result, reads it, drains the remaining event records, and the launcher exits with the scenario's outcome:
     - unattended run — the runner requests a normal VS Code shutdown;
     - attended run — the launcher detaches and leaves the window open.
 

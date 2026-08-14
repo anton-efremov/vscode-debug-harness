@@ -1,5 +1,5 @@
 /**
- * @fileoverview Resolves and validates Launcher inputs before run preparation begins.
+ * @fileoverview Validates and resolves Launcher inputs before run preparation begins.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
