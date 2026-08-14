@@ -1,19 +1,20 @@
+/**
+ * @fileoverview Verifies public target types and stateless driver interactions.
+ */
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { at, runCommand } from "../src/api";
 import { clickTarget, coordinateToPagePoint, doubleClickTarget, dragTarget, elementExists } from "../src/driver/gestures";
 import { driver } from "../src/driver/main";
-import type { ElementTarget } from "../src/types";
-import type { WebviewContext } from "../src/types";
+import type { ElementTarget, Locator } from "../src/types";
 
 function frameWithBox(x = 100, y = 50): any {
   return { frameElement: vi.fn().mockResolvedValue({ boundingBox: vi.fn().mockResolvedValue({ x, y, width: 500, height: 400 }) }) };
 }
 
 describe("targets", () => {
-  it("exposes a query context instead of a Playwright Frame", () => {
-    expectTypeOf<WebviewContext>().toHaveProperty("locator");
-    expectTypeOf<WebviewContext>().toHaveProperty("getByRole");
-    expectTypeOf<WebviewContext>().not.toHaveProperty("evaluate");
+  it("passes a root Locator to element targets and receives a Locator", () => {
+    expectTypeOf<ElementTarget["locate"]>().parameter(0).toEqualTypeOf<Locator>();
+    expectTypeOf<ElementTarget["locate"]>().returns.toEqualTypeOf<Locator>();
   });
   it("at stores raw webview coordinates", () => expect(at(20, 30)).toEqual({ kind: "coordinate", x: 20, y: 30 }));
   it.each([[Number.NaN, 1], [Infinity, 1], [-Infinity, 1], [1, Number.NaN]])("rejects invalid coordinates", (x, y) => expect(() => at(x, y)).toThrow(/finite/));
@@ -29,10 +30,12 @@ describe("element gesture ownership", () => {
     const locator = { click: vi.fn(), dblclick: vi.fn(), hover: vi.fn() };
     const target: ElementTarget = { kind: "element", locate: () => locator as any };
     const mouse = { down: vi.fn(), up: vi.fn(), move: vi.fn(), click: vi.fn() };
-    const page = { mouse } as any; const webview = {} as any; const frame = {} as any;
-    await clickTarget(page, webview, frame, target);
-    await doubleClickTarget(page, webview, frame, target);
-    await dragTarget(page, webview, frame, target, target);
+    const page = { mouse } as any;
+    const root = {} as any;
+    const frame = {} as any;
+    await clickTarget(page, root, frame, target);
+    await doubleClickTarget(page, root, frame, target);
+    await dragTarget(page, root, frame, target, target);
     expect(locator.click).toHaveBeenCalledOnce();
     expect(locator.dblclick).toHaveBeenCalledOnce();
     expect(locator.hover).toHaveBeenCalledTimes(2);

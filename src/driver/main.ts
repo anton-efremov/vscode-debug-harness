@@ -2,8 +2,9 @@
  * @fileoverview Composes scenario-facing driver operations across VS Code and Playwright.
  */
 import path from "node:path";
+import type { Locator } from "playwright-core";
 import { ENV_WORKSPACE, requireEnv } from "../protocol";
-import type { ElementTarget, Target, WebviewContext } from "../types";
+import type { ElementTarget, Target } from "../types";
 import { Connection } from "./connection";
 import { clickTarget, doubleClickTarget, dragTarget, elementExists } from "./gestures";
 import { VscodeDriver } from "./vscode";
@@ -17,30 +18,30 @@ export class Driver {
     return resolveWebview(await this.connection.page());
   }
 
-  /** Returns the restricted query context for the visible extension webview. */
-  async webview(): Promise<WebviewContext> {
-    return (await this.resolvedWebview()).context;
+  /** Returns the root locator of the active webview. */
+  async webview(): Promise<Locator> {
+    return (await this.resolvedWebview()).root;
   }
 
   /** Clicks a scenario target. */
   async click(target: Target): Promise<void> {
     const page = await this.connection.page();
-    const webview = await resolveWebview(page);
-    await clickTarget(page, webview.context, webview.coordinateFrame, target);
+    const resolved = await resolveWebview(page);
+    await clickTarget(page, resolved.root, resolved.coordinateFrame, target);
   }
 
   /** Double-clicks a scenario target. */
   async doubleClick(target: Target): Promise<void> {
     const page = await this.connection.page();
-    const webview = await resolveWebview(page);
-    await doubleClickTarget(page, webview.context, webview.coordinateFrame, target);
+    const resolved = await resolveWebview(page);
+    await doubleClickTarget(page, resolved.root, resolved.coordinateFrame, target);
   }
 
   /** Drags one scenario target to another. */
   async drag(target: Target, to: Target): Promise<void> {
     const page = await this.connection.page();
-    const webview = await resolveWebview(page);
-    await dragTarget(page, webview.context, webview.coordinateFrame, target, to);
+    const resolved = await resolveWebview(page);
+    await dragTarget(page, resolved.root, resolved.coordinateFrame, target, to);
   }
 
   /** Types text through the VS Code workbench keyboard. */

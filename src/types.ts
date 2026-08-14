@@ -1,17 +1,10 @@
 /**
- * @fileoverview Defines the public target and webview-query types used by scenarios.
+ * @fileoverview Defines the public target and locator types used by scenarios.
+ * Targets only describe elements; all actions go through driver functions.
  */
-import type { Frame, Locator } from "playwright-core";
+import type { Locator } from "playwright-core";
 
 export type { Locator } from "playwright-core";
-
-export interface WebviewContext {
-  locator(selector: string): Locator;
-  getByRole(
-    role: Parameters<Frame["getByRole"]>[0],
-    options?: Parameters<Frame["getByRole"]>[1],
-  ): Locator;
-}
 
 export interface CoordinateTarget {
   readonly kind: "coordinate";
@@ -21,7 +14,7 @@ export interface CoordinateTarget {
 
 export interface ElementTarget {
   readonly kind: "element";
-  locate(webview: WebviewContext): Locator;
+  locate(root: Locator): Locator;
 }
 
 export type Target = CoordinateTarget | ElementTarget;

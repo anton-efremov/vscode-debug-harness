@@ -1,20 +1,11 @@
 /**
- * @fileoverview Resolves the single visible VS Code webview and exposes its query context.
+ * @fileoverview Resolves the single visible VS Code webview and its root locator.
  */
-import type { Frame, Page } from "playwright-core";
-import type { WebviewContext } from "../types";
+import type { Frame, Locator, Page } from "playwright-core";
 
 export interface ResolvedWebview {
-  context: WebviewContext;
+  root: Locator;
   coordinateFrame: Frame;
-}
-
-function webviewContext(host: Frame): WebviewContext {
-  const root = host.locator("vscodewebview=*");
-  return {
-    locator: (selector) => root.locator(selector),
-    getByRole: (role, options) => root.getByRole(role, options),
-  };
 }
 
 /** Waits for and resolves the single visible extension webview on a workbench page. */
@@ -33,7 +24,7 @@ export async function resolveWebview(page: Page): Promise<ResolvedWebview> {
     if (visible.length === 1) {
       const active = await visible[0].locator("iframe#active-frame").elementHandle();
       if (active && await active.boundingBox()) {
-        return { context: webviewContext(visible[0]), coordinateFrame: visible[0] };
+        return { root: visible[0].locator("vscodewebview=*"), coordinateFrame: visible[0] };
       }
     }
     await new Promise((resolve) => setTimeout(resolve, 100));

@@ -2,9 +2,9 @@
  * @fileoverview Exposes the public interaction API used by debugging scenarios.
  */
 import { driver } from "./driver/main";
-import type { CoordinateTarget, ElementTarget, Target, WebviewContext } from "./types";
+import type { CoordinateTarget, ElementTarget, Locator, Target } from "./types";
 
-export type { CoordinateTarget, ElementTarget, Locator, Target, WebviewContext } from "./types";
+export type { CoordinateTarget, ElementTarget, Locator, Target } from "./types";
 
 /** Creates a coordinate target in webview-local pixels. */
 export function at(x: number, y: number): CoordinateTarget {
@@ -32,5 +32,5 @@ export async function readSource(): Promise<string> { return driver.readSource()
 export async function exists(target: ElementTarget): Promise<boolean> { return driver.exists(target); }
 /** Captures the active webview to a PNG in the run workspace. */
 export async function screenshot(name: string): Promise<string> { return driver.screenshot(name); }
-/** Returns the restricted query surface for the active webview. */
-export async function webview(): Promise<WebviewContext> { return driver.webview(); }
+/** Returns the root locator of the active webview. */
+export async function webview(): Promise<Locator> { return driver.webview(); }
