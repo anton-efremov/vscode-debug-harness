@@ -1,5 +1,5 @@
 {
-  "name": "vscode-debug-harness-bridge",
+  "name": "vscode-debug-harness-runner",
   "version": "0.1.0",
   "private": true,
   "engines": { "vscode": "^1.90.0" },

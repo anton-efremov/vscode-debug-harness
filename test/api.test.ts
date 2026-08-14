@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { at, runCommand } from "../src/api";
-import { clickTarget, coordinateToPagePoint, doubleClickTarget, dragTarget, elementExists } from "../src/runtime";
-import { runtime } from "../src/runtime";
+import { clickTarget, coordinateToPagePoint, doubleClickTarget, dragTarget, elementExists } from "../src/driver/gestures";
+import { driver } from "../src/driver/main";
 import type { ElementTarget } from "../src/types";
 import type { WebviewContext } from "../src/types";
 
@@ -51,13 +51,13 @@ describe("element gesture ownership", () => {
 
 describe("runCommand", () => {
   it("forwards no extra argument", async () => {
-    const execute = vi.spyOn(runtime, "runCommand").mockResolvedValue(undefined);
+    const execute = vi.spyOn(driver, "runCommand").mockResolvedValue(undefined);
     await runCommand("x");
     expect(execute).toHaveBeenCalledWith("x");
   });
 
   it("forwards separate command arguments", async () => {
-    const execute = vi.spyOn(runtime, "runCommand").mockResolvedValue(undefined);
+    const execute = vi.spyOn(driver, "runCommand").mockResolvedValue(undefined);
     await runCommand("x", 1, "a");
     expect(execute).toHaveBeenCalledWith("x", 1, "a");
   });

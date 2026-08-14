@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { Writable } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runHarness } from "../src/launcher";
+import { runHarness } from "../src/launcher/main";
 
 const temporary: string[] = [];
 let originalExecutable: string | undefined;
@@ -46,7 +46,7 @@ console.log = original;
 
 describe("launcher process boundary", () => {
   it("rejects invalid terminal arguments with usage and exit code 2", () => {
-    const launcher = path.resolve(__dirname, "../dist/launcher.js");
+    const launcher = path.resolve(__dirname, "../dist/launcher/main.js");
     const result = spawnSync(process.execPath, [launcher, "--unknown", "scenario.ts"], { encoding: "utf8" });
     expect(result.status).toBe(2);
   });
