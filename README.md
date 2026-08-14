@@ -1,8 +1,10 @@
 # vscode-custom-editor-harness
 
-`vscode-custom-editor-harness` runs a TypeScript debugging scenario against a real VS Code instance with your extension loaded.
+`vscode-custom-editor-harness` drives a real VS Code custom editor from TypeScript scenarios: real clicks, drags, and keystrokes into your webview, real VS Code commands, real documents.
 
-It is intended for cases where calling extension functions directly is not enough and you need to reproduce real VS Code or webview behavior.
+Use it to reproduce bugs interactively or as an end-to-end test runner.
+
+Unlike `@vscode/test-electron`, which runs your test code inside VS Code, this harness drives your editor from outside, through the same surfaces a user touches.
 
 A scenario can:
 
@@ -13,7 +15,7 @@ A scenario can:
 * read the underlying document;
 * take screenshots.
 
-The harness acts through normal user-facing surfaces. It does not call private APIs of the extension under test.
+The harness acts through normal user-facing surfaces. It does not call private APIs of your extension.
 
 Architecture details: `docs/architecture.md`.
 
@@ -45,13 +47,13 @@ VS Code
 │        ▼
 └─ Renderer / client
     └─ Webview
-       runs extension frontend
+       runs the editor frontend
        and receives Playwright-driven input
 ```
 
 The harness knows how to perform generic actions, e.g. click, drag.
 
-Your extension-specific target library defines which UI elements the harness can address.
+Your editor-specific target library defines which UI elements the harness can address.
 
 For example:
 
@@ -61,7 +63,7 @@ await click(classBox("Order"));
 
 `click()` comes from `vscode-custom-editor-harness`.
 
-`classBox("Order")` comes from the extension-specific target library.
+`classBox("Order")` comes from the editor-specific target library.
 
 ## Install
 
@@ -95,7 +97,7 @@ The harness handles the required WSL-to-Windows path conversion.
 
 ## Run API
 
-Run the command from the root of the VS Code extension under development:
+Run the command from the root of the extension that provides your custom editor:
 
 ```bash
 npx vscode-custom-editor-harness ./harness/scenarios/bug.ts
@@ -123,7 +125,7 @@ The launcher:
 2. creates a fresh temporary workspace;
 3. bundles the TypeScript scenario and its normal dependencies;
 4. launches the dedicated VS Code;
-5. loads the extension under development;
+5. loads your extension;
 6. loads the harness runner extension;
 7. enables Chromium remote debugging;
 8. waits for the scenario result.
@@ -154,9 +156,9 @@ The original scenario fixtures are not modified.
 
 ## Interaction API
 
-A **scenario** is a TypeScript program that describes one debugging run.
+A **scenario** is a TypeScript program that describes one session: a bug reproduction or an end-to-end test.
 
-It imports interaction functions from `vscode-custom-editor-harness` and extension-specific targets from normal local modules or packages:
+It imports interaction functions from `vscode-custom-editor-harness` and editor-specific targets from normal local modules or packages:
 
 ```ts
 import {
@@ -325,7 +327,7 @@ Coordinate targets such as `at(...)` cannot be passed to `exists()`.
 
 #### `screenshot(name)`
 
-Save the current extension webview as `<run-workspace>/<name>.png`.
+Save the current editor webview as `<run-workspace>/<name>.png`.
 
 ```ts
 const path = await screenshot("after-drag");
@@ -335,7 +337,7 @@ The function returns the written file path.
 
 #### `webview()`
 
-Return the root locator for the extension webview as a `Promise<Locator>`.
+Return the root locator for the editor webview as a `Promise<Locator>`.
 
 ```ts
 const view = await webview();
@@ -359,9 +361,9 @@ The harness does not expose the full Playwright `Page` or `Frame`. It owns VS Co
 
 ## Target interface API
 
-The harness knows how to perform generic gestures, but it does not know the UI structure of the extension under test.
+The harness knows how to perform generic gestures, but it does not know the UI structure of your editor.
 
-An extension-specific target library defines addressable UI elements such as:
+An editor-specific target library defines addressable UI elements such as:
 
 ```ts
 classBox("Order")
@@ -443,7 +445,7 @@ For example:
 await click(classBox("Order"));
 ```
 
-combines an extension-specific target with a generic harness gesture.
+combines an editor-specific target with a generic harness gesture.
 
 ### `CoordinateTarget`
 
@@ -469,4 +471,4 @@ interface CoordinateTarget {
 }
 ```
 
-The extension-specific target library does not need to implement coordinate targets.
+The editor-specific target library does not need to implement coordinate targets.
