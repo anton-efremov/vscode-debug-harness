@@ -1,6 +1,6 @@
-# vscode-debug-harness
+# vscode-custom-editor-harness
 
-`vscode-debug-harness` runs a TypeScript debugging scenario against a real VS Code instance with your extension loaded.
+`vscode-custom-editor-harness` runs a TypeScript debugging scenario against a real VS Code instance with your extension loaded.
 
 It is intended for cases where calling extension functions directly is not enough and you need to reproduce real VS Code or webview behavior.
 
@@ -25,7 +25,7 @@ There are three public APIs: the Run API, the Interaction API, and the Target In
 Terminal
 │
 │ CLI API
-│ npx vscode-debug-harness scenario.ts
+│ npx vscode-custom-editor-harness scenario.ts
 ▼
 Harness launcher
 │
@@ -59,7 +59,7 @@ For example:
 await click(classBox("Order"));
 ```
 
-`click()` comes from `vscode-debug-harness`.
+`click()` comes from `vscode-custom-editor-harness`.
 
 `classBox("Order")` comes from the extension-specific target library.
 
@@ -68,7 +68,7 @@ await click(classBox("Order"));
 ### Install the package
 
 ```bash
-npm install --save-dev vscode-debug-harness
+npm install --save-dev vscode-custom-editor-harness
 ```
 
 ### Configure VS Code
@@ -98,7 +98,7 @@ The harness handles the required WSL-to-Windows path conversion.
 Run the command from the root of the VS Code extension under development:
 
 ```bash
-npx vscode-debug-harness ./harness/scenarios/bug.ts
+npx vscode-custom-editor-harness ./harness/scenarios/bug.ts
 ```
 
 The current working directory is treated as the extension under test.
@@ -108,7 +108,7 @@ The argument is the TypeScript scenario to execute.
 Use:
 
 ```bash
-npx vscode-debug-harness ./harness/scenarios/bug.ts --attended
+npx vscode-custom-editor-harness ./harness/scenarios/bug.ts --attended
 ```
 
 to keep VS Code open after the scenario finishes.
@@ -156,7 +156,7 @@ The original scenario fixtures are not modified.
 
 A **scenario** is a TypeScript program that describes one debugging run.
 
-It imports interaction functions from `vscode-debug-harness` and extension-specific targets from normal local modules or packages:
+It imports interaction functions from `vscode-custom-editor-harness` and extension-specific targets from normal local modules or packages:
 
 ```ts
 import {
@@ -165,7 +165,7 @@ import {
   drag,
   at,
   readSource,
-} from "vscode-debug-harness";
+} from "vscode-custom-editor-harness";
 
 import {
   classBox,
@@ -411,7 +411,7 @@ For example:
 ```ts
 import type {
   ElementTarget,
-} from "vscode-debug-harness";
+} from "vscode-custom-editor-harness";
 
 export function button(
   name: string,

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * @fileoverview Launches one debug-harness run from the terminal.
+ * @fileoverview Launches one custom-editor-harness run from the terminal.
  * Validates the run, prepares its workspace, launches VS Code, and reports completion.
  */
 import { bundleScenario } from "./bundle-scenario";
@@ -27,7 +27,7 @@ export interface RunResult {
 }
 
 function usage(): never {
-  process.stderr.write("Usage: vscode-debug-harness [--attended] <scenario-file>\n");
+  process.stderr.write("Usage: vscode-custom-editor-harness [--attended] <scenario-file>\n");
   process.exit(2);
 }
 
@@ -39,7 +39,7 @@ function parseArguments(args: string[]): RunOptions {
   return { scenario: positional[0], attended };
 }
 
-/** Runs one debug-harness launch from the supplied options. */
+/** Runs one custom-editor-harness launch from the supplied options. */
 export async function runHarness(options: RunOptions): Promise<RunResult> {
   const stdout = options.stdout ?? process.stdout;
   const stderr = options.stderr ?? process.stderr;

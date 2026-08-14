@@ -21,7 +21,7 @@ const __harnessEventFile = process.env[${JSON.stringify(ENV_EVENTS)}];
 const __harnessRelay = (...values) => __harnessAppendEvent(__harnessEventFile, JSON.stringify({ text: values.map(value => typeof value === "string" ? value : String(value)).join(" ") }) + "\\n");
 const __harnessConsole = __harnessEventFile ? { log: __harnessRelay, info: __harnessRelay, warn: __harnessRelay, error: __harnessRelay } : console;` },
     define: { console: "__harnessConsole" },
-    alias: { "vscode-debug-harness": path.join(packageRoot(), "dist", "scenario-api.mjs") },
+    alias: { "vscode-custom-editor-harness": path.join(packageRoot(), "dist", "scenario-api.mjs") },
     external: ["vscode"],
   });
 }

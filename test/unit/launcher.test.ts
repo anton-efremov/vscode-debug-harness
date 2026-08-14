@@ -31,9 +31,9 @@ async function fixture(): Promise<{ root: string; scenario: string; executable: 
   const executable = path.join(root, "fake-code.mjs");
   await fs.writeFile(executable, `#!/usr/bin/env node
 import fs from "node:fs/promises";
-const event = process.env.VSCODE_DEBUG_HARNESS_EVENTS;
-const result = process.env.VSCODE_DEBUG_HARNESS_RESULT;
-const scenario = process.env.VSCODE_DEBUG_HARNESS_SCENARIO;
+const event = process.env.VSCODE_CUSTOM_EDITOR_HARNESS_EVENTS;
+const result = process.env.VSCODE_CUSTOM_EDITOR_HARNESS_RESULT;
+const scenario = process.env.VSCODE_CUSTOM_EDITOR_HARNESS_SCENARIO;
 const original = console.log;
 console.log = (...v) => fs.appendFile(event, JSON.stringify({text: v.join(" ")}) + "\\n");
 try { await import(scenario); await fs.writeFile(result + ".tmp", JSON.stringify({ok:true})); await fs.rename(result + ".tmp", result); }
@@ -58,7 +58,7 @@ describe("launcher process boundary", () => {
     const result = await runHarness({ scenario: data.scenario, extensionPath: data.root, runRoot: path.dirname(data.root), cdpPort: 9333, attended: false, stdout: stream, stderr: stream });
     expect(result.exitCode).toBe(0);
     expect(output).toContain("Run workspace:");
-    const events = await fs.readFile(path.join(result.workspace, ".vscode-debug-harness", "events.jsonl"), "utf8");
+    const events = await fs.readFile(path.join(result.workspace, ".vscode-custom-editor-harness", "events.jsonl"), "utf8");
     expect(events).toContain("bundled companion");
     expect(output).toContain("bundled companion");
     await expect(fs.stat(result.workspace)).resolves.toBeTruthy();

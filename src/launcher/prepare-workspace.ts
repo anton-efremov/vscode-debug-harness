@@ -20,7 +20,7 @@ export function packageRoot(): string {
 
 /** Creates a unique retained workspace for one run. */
 export async function createRunWorkspace(root?: string): Promise<string> {
-  const parent = root ? path.resolve(root) : path.join(os.tmpdir(), "vscode-debug-harness");
+  const parent = root ? path.resolve(root) : path.join(os.tmpdir(), "vscode-custom-editor-harness");
   await fs.mkdir(parent, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   return fs.mkdtemp(path.join(parent, `${stamp}-`));
@@ -29,7 +29,7 @@ export async function createRunWorkspace(root?: string): Promise<string> {
 /** Creates the retained workspace and its internal run-file paths. */
 export async function createRunFiles(root?: string): Promise<RunFiles> {
   const workspace = await createRunWorkspace(root);
-  const internal = path.join(workspace, ".vscode-debug-harness");
+  const internal = path.join(workspace, ".vscode-custom-editor-harness");
   await fs.mkdir(internal);
   return {
     workspace,

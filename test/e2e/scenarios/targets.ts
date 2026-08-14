@@ -1,7 +1,7 @@
 /**
  * @fileoverview Defines element targets for the E2E fixture extension.
  */
-import type { ElementTarget } from "vscode-debug-harness";
+import type { ElementTarget } from "vscode-custom-editor-harness";
 
 /** Locates a fixture button by its accessible name. */
 export const button = (name: string): ElementTarget => ({

@@ -3,7 +3,7 @@
 > **Implementation state:** Current
 > **Document state:** Maintained
 > **Last reviewed:** 2026-08-13
-> **Scope:** Rules and standards for code in vscode-debug-harness
+> **Scope:** Rules and standards for code in vscode-custom-editor-harness
 
 ## 1. Enforced standards
 
@@ -99,7 +99,7 @@ Every TypeScript source module begins with a concise `@fileoverview` block:
 
 ```ts
 /**
- * @fileoverview Launches one debug-harness run from the terminal.
+ * @fileoverview Launches one custom-editor-harness run from the terminal.
  * Validates the run, prepares its workspace, launches VS Code, and reports completion.
  */
 ```
@@ -112,7 +112,7 @@ Every exported function has a JSDoc block with at least a one-line summary:
 
 ```ts
 /**
- * Runs one debug-harness launch from the supplied options.
+ * Runs one custom-editor-harness launch from the supplied options.
  */
 export async function runHarness(options: RunOptions): Promise<RunResult> {
 ```

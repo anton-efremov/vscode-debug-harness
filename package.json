@@ -1,11 +1,11 @@
 {
-  "name": "vscode-debug-harness",
+  "name": "vscode-custom-editor-harness",
   "version": "0.1.0",
-  "description": "Drive a real VS Code extension from TypeScript debugging scenarios",
+  "description": "Drive a real VS Code custom editor from TypeScript scenarios",
   "type": "commonjs",
   "main": "dist/api.js",
   "types": "dist/api.d.ts",
-  "bin": { "vscode-debug-harness": "dist/launcher/main.js" },
+  "bin": { "vscode-custom-editor-harness": "dist/launcher/main.js" },
   "files": ["dist", "README.md", "docs/architecture.md", "LICENSE"],
   "engines": { "node": ">=20" },
   "scripts": {

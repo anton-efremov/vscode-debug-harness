@@ -1,5 +1,5 @@
 {
-  "name": "debug-harness-fixture",
+  "name": "custom-editor-harness-fixture",
   "version": "1.0.0",
   "private": true,
   "engines": { "vscode": "^1.90.0" },
@@ -8,7 +8,7 @@
   "contributes": {
     "customEditors": [{
       "viewType": "debugHarnessFixture.editor",
-      "displayName": "Debug Harness Fixture",
+      "displayName": "Custom Editor Harness Fixture",
       "selector": [{ "filenamePattern": "*.fixture" }],
       "priority": "default"
     }]

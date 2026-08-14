@@ -3,9 +3,9 @@
 > **Implementation state:** Current  
 > **Document state:** Maintained  
 > **Last reviewed:** 2026-08-13  
-> **Scope:** System structure of vscode-debug-harness — context view, runtime view, module view, execution flow
+> **Scope:** System structure of vscode-custom-editor-harness — context view, runtime view, module view, execution flow
 
-`vscode-debug-harness` runs a user-written TypeScript debugging scenario against a real VS Code instance with the user's extension loaded.
+`vscode-custom-editor-harness` runs a user-written TypeScript debugging scenario against a real VS Code instance with the user's extension loaded.
 
 This document has four views:
 
@@ -56,7 +56,7 @@ The tested extension therefore spans both VS Code processes: its host part is re
 ```text
 Terminal
 │
-│  npx vscode-debug-harness scenario.ts
+│  npx vscode-custom-editor-harness scenario.ts
 ▼
 Launcher process (Node)
 │
@@ -107,7 +107,7 @@ src/
                          webview pixels) | ElementTarget (locate(root: Locator)
                          → Locator); targets describe, the driver acts
   protocol.ts            env variable names and record shapes; no raw
-                         VSCODE_DEBUG_HARNESS_* string outside it
+                         VSCODE_CUSTOM_EDITOR_HARNESS_* string outside it
   launcher/
     main.ts              CLI entry; each run step is a sibling-file call,
                          only process wiring lives inline

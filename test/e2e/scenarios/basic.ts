@@ -1,4 +1,4 @@
-import { at, click, doubleClick, drag, exists, openWith, press, readSource, runCommand, screenshot, type, webview } from "vscode-debug-harness";
+import { at, click, doubleClick, drag, exists, openWith, press, readSource, runCommand, screenshot, type, webview } from "vscode-custom-editor-harness";
 import { button, input, region } from "./targets.js";
 
 function assert(condition: unknown, message: string): asserts condition { if (!condition) throw new Error(message); }

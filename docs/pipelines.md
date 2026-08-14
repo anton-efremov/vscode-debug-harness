@@ -2,7 +2,7 @@
 
 > **Document state:** Maintained  
 > **Last reviewed:** 2026-08-14  
-> **Scope:** Build, test, and release pipelines of vscode-debug-harness
+> **Scope:** Build, test, and release pipelines of vscode-custom-editor-harness
 
 ## 1. Build pipeline
 

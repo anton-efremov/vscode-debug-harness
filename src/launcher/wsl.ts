@@ -41,7 +41,7 @@ export async function createLaunchDataRoot(executable: string, internal: string)
   if (!launchesWindowsExecutable(executable)) return { host: internal, child: internal, disposable: false };
   const windowsTemp = execFileSync("cmd.exe", ["/d", "/s", "/c", "echo %TEMP%"], { encoding: "utf8" }).trim();
   const hostTemp = execFileSync("wslpath", ["-u", windowsTemp], { encoding: "utf8" }).trim();
-  const host = path.join(hostTemp, "vscode-debug-harness", path.basename(path.dirname(internal)));
+  const host = path.join(hostTemp, "vscode-custom-editor-harness", path.basename(path.dirname(internal)));
   await fs.mkdir(host, { recursive: true });
   return { host, child: pathForExecutable(host, executable), disposable: true };
 }
